@@ -36,8 +36,8 @@ No tasks are currently ready. All remaining work is blocked on external dependen
 
 | Task  | Title | Date |
 |-------|-------|------|
+| T-004 | Add TypeScript build pipeline and type-checking | 2026-03-01 |
 | T-010 | Expose self-heal status for external monitoring | 2026-02-28 |
 | T-009 | Emit structured observability events for heal actions | 2026-02-28 |
 | T-008 | Add dry-run mode for safe validation of healing logic | 2026-02-28 |
 | T-007 | Add active model recovery probing to shorten cooldown periods | 2026-02-28 |
-| T-006 | Support configuration hot-reload without gateway restart | 2026-02-28 |
