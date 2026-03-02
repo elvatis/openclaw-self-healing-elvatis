@@ -228,6 +228,42 @@ export function parseConfig(raw: any): PluginConfig {
   };
 }
 
+export type ConfigValidationResult = {
+  valid: boolean;
+  errors: string[];
+};
+
+export function validateConfig(config: PluginConfig): ConfigValidationResult {
+  const errors: string[] = [];
+
+  if (!Array.isArray(config.modelOrder) || config.modelOrder.length === 0) {
+    errors.push("modelOrder must have at least one entry");
+  }
+
+  if (typeof config.cooldownMinutes !== "number" || config.cooldownMinutes < 1 || config.cooldownMinutes > 10080) {
+    errors.push("cooldownMinutes must be between 1 and 10080 (1 week)");
+  }
+
+  if (typeof config.probeIntervalSec !== "number" || config.probeIntervalSec < 60) {
+    errors.push("probeIntervalSec must be >= 60");
+  }
+
+  if (typeof config.whatsappMinRestartIntervalSec !== "number" || config.whatsappMinRestartIntervalSec < 60) {
+    errors.push("whatsappMinRestartIntervalSec must be >= 60");
+  }
+
+  // Best-effort: check that the state file directory is writable
+  const stateDir = path.dirname(config.stateFile);
+  try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.accessSync(stateDir, fs.constants.W_OK);
+  } catch {
+    errors.push(`stateFile directory is not writable: ${stateDir}`);
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 export function configDiff(a: PluginConfig, b: PluginConfig): string[] {
   const changes: string[] = [];
   for (const k of Object.keys(a) as (keyof PluginConfig)[]) {
@@ -343,6 +379,16 @@ export default function register(api: any) {
   if (raw.enabled === false) return;
 
   let config = parseConfig(raw);
+
+  // Validate configuration - fail fast on invalid config
+  const validation = validateConfig(config);
+  if (!validation.valid) {
+    for (const err of validation.errors) {
+      api.logger?.error?.(`[self-heal] config validation failed: ${err}`);
+    }
+    api.logger?.error?.(`[self-heal] plugin not started due to ${validation.errors.length} config error(s)`);
+    return;
+  }
 
   api.logger?.info?.(`[self-heal] enabled.${config.dryRun ? " DRY-RUN MODE." : ""} order=${config.modelOrder.join(" -> ")}`);
 

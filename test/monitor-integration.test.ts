@@ -191,7 +191,7 @@ describe("monitor service - integration tick flows", () => {
           configFile,
           configBackupsDir: backupsDir,
           modelOrder: ["model-a"],
-          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 0 },
+          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 60 },
         },
       });
       api.runtime.system.runCommandWithTimeout.mockImplementation(async (opts: any) => {
@@ -279,7 +279,7 @@ describe("monitor service - integration tick flows", () => {
           configFile,
           configBackupsDir: backupsDir,
           modelOrder: ["model-a"],
-          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 0 },
+          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 60 },
         },
       });
       api.runtime.system.runCommandWithTimeout.mockResolvedValue({
@@ -315,7 +315,7 @@ describe("monitor service - integration tick flows", () => {
           configFile,
           configBackupsDir: backupsDir,
           modelOrder: ["model-a"],
-          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 0 },
+          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 60 },
         },
       });
       api.runtime.system.runCommandWithTimeout.mockImplementation(async (opts: any) => {
@@ -773,7 +773,7 @@ describe("monitor service - integration tick flows", () => {
           configFile,
           configBackupsDir: backupsDir,
           modelOrder: ["model-a"],
-          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 0 },
+          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 60 },
         },
       });
       api.runtime.system.runCommandWithTimeout.mockResolvedValue({
@@ -790,7 +790,7 @@ describe("monitor service - integration tick flows", () => {
         configFile,
         configBackupsDir: backupsDir,
         modelOrder: ["model-a"],
-        autoFix: { whatsappDisconnectThreshold: 10, whatsappMinRestartIntervalSec: 0 },
+        autoFix: { whatsappDisconnectThreshold: 10, whatsappMinRestartIntervalSec: 60 },
       };
 
       await runOneTick(api);
@@ -858,7 +858,7 @@ describe("monitor service - integration tick flows", () => {
           configFile,
           configBackupsDir: backupsDir,
           modelOrder: ["model-a"],
-          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 0 },
+          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 60 },
         },
       });
       api.runtime.system.runCommandWithTimeout.mockResolvedValue({
@@ -876,7 +876,7 @@ describe("monitor service - integration tick flows", () => {
         configBackupsDir: backupsDir,
         modelOrder: ["model-a"],
         dryRun: true,
-        autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 0 },
+        autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 60 },
       };
 
       await runOneTick(api);
@@ -911,7 +911,7 @@ describe("monitor service - integration tick flows", () => {
           configBackupsDir: backupsDir,
           modelOrder: ["model-a"],
           dryRun: true,
-          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 0 },
+          autoFix: { whatsappDisconnectThreshold: 2, whatsappMinRestartIntervalSec: 60 },
         },
       });
       api.runtime.system.runCommandWithTimeout.mockResolvedValue({

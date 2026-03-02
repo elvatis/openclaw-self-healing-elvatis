@@ -13,6 +13,7 @@ import {
   patchSessionModel,
   safeJsonParse,
   parseConfig,
+  validateConfig,
   configDiff,
   buildStatusSnapshot,
   isValidIssueRepoSlug,
@@ -2314,5 +2315,205 @@ describe("buildStatusSnapshot", () => {
     expect(snap.whatsapp).toBeDefined();
     expect(snap.cron).toBeDefined();
     expect(snap.config).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateConfig
+// ---------------------------------------------------------------------------
+
+describe("validateConfig", () => {
+  function validConfig(overrides: Partial<PluginConfig> = {}): PluginConfig {
+    const dir = tmpDir();
+    return {
+      modelOrder: ["anthropic/claude-opus-4-6"],
+      cooldownMinutes: 300,
+      stateFile: path.join(dir, "state.json"),
+      sessionsFile: path.join(dir, "sessions.json"),
+      configFile: path.join(dir, "openclaw.json"),
+      configBackupsDir: path.join(dir, "backups"),
+      patchPins: true,
+      disableFailingCrons: false,
+      disableFailingPlugins: false,
+      whatsappRestartEnabled: true,
+      whatsappDisconnectThreshold: 2,
+      whatsappMinRestartIntervalSec: 300,
+      cronFailThreshold: 3,
+      issueCooldownSec: 21600,
+      issueRepo: "elvatis/openclaw-self-healing-homeofe",
+      pluginDisableCooldownSec: 3600,
+      probeEnabled: true,
+      probeIntervalSec: 300,
+      dryRun: false,
+      ...overrides,
+    };
+  }
+
+  it("accepts a valid default config", () => {
+    const result = validateConfig(validConfig());
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects empty modelOrder", () => {
+    const result = validateConfig(validConfig({ modelOrder: [] }));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("modelOrder must have at least one entry");
+  });
+
+  it("rejects modelOrder that is not an array", () => {
+    const result = validateConfig(validConfig({ modelOrder: "not-array" as any }));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("modelOrder must have at least one entry");
+  });
+
+  it("rejects cooldownMinutes below 1", () => {
+    const result = validateConfig(validConfig({ cooldownMinutes: 0 }));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("cooldownMinutes must be between 1 and 10080 (1 week)");
+  });
+
+  it("rejects cooldownMinutes above 10080", () => {
+    const result = validateConfig(validConfig({ cooldownMinutes: 10081 }));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("cooldownMinutes must be between 1 and 10080 (1 week)");
+  });
+
+  it("accepts cooldownMinutes at boundary 1", () => {
+    const result = validateConfig(validConfig({ cooldownMinutes: 1 }));
+    expect(result.valid).toBe(true);
+  });
+
+  it("accepts cooldownMinutes at boundary 10080", () => {
+    const result = validateConfig(validConfig({ cooldownMinutes: 10080 }));
+    expect(result.valid).toBe(true);
+  });
+
+  it("rejects cooldownMinutes that is not a number", () => {
+    const result = validateConfig(validConfig({ cooldownMinutes: "abc" as any }));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("cooldownMinutes must be between 1 and 10080 (1 week)");
+  });
+
+  it("rejects probeIntervalSec below 60", () => {
+    const result = validateConfig(validConfig({ probeIntervalSec: 59 }));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("probeIntervalSec must be >= 60");
+  });
+
+  it("accepts probeIntervalSec at boundary 60", () => {
+    const result = validateConfig(validConfig({ probeIntervalSec: 60 }));
+    expect(result.valid).toBe(true);
+  });
+
+  it("rejects whatsappMinRestartIntervalSec below 60", () => {
+    const result = validateConfig(validConfig({ whatsappMinRestartIntervalSec: 30 }));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("whatsappMinRestartIntervalSec must be >= 60");
+  });
+
+  it("accepts whatsappMinRestartIntervalSec at boundary 60", () => {
+    const result = validateConfig(validConfig({ whatsappMinRestartIntervalSec: 60 }));
+    expect(result.valid).toBe(true);
+  });
+
+  it("rejects non-writable stateFile directory", () => {
+    // Create a file, then try to use a path inside it as a directory - fails on all platforms
+    const dir = tmpDir();
+    const blocker = path.join(dir, "blocker");
+    fs.writeFileSync(blocker, "occupied");
+    const result = validateConfig(validConfig({ stateFile: path.join(blocker, "sub", "state.json") }));
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("stateFile directory is not writable"))).toBe(true);
+  });
+
+  it("collects multiple errors at once", () => {
+    const result = validateConfig(
+      validConfig({
+        modelOrder: [],
+        cooldownMinutes: 0,
+        probeIntervalSec: 10,
+        whatsappMinRestartIntervalSec: 5,
+      })
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("accepts parseConfig defaults (valid config from defaults)", () => {
+    // parseConfig with no overrides should produce a valid config
+    // (state directory may not be writable in CI, so we override stateFile)
+    const dir = tmpDir();
+    const cfg = parseConfig({});
+    cfg.stateFile = path.join(dir, "state.json");
+    const result = validateConfig(cfg);
+    expect(result.valid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// register() fail-fast on invalid config
+// ---------------------------------------------------------------------------
+
+describe("register() config validation fail-fast", () => {
+  it("does not register services or event handlers when config is invalid", () => {
+    const dir = tmpDir();
+    const api = mockApi({
+      pluginConfig: {
+        cooldownMinutes: 0,
+        probeIntervalSec: 10,
+        stateFile: path.join(dir, "state.json"),
+      },
+    });
+
+    register(api);
+
+    expect(api._services).toHaveLength(0);
+    expect(api._handlers["agent_end"]).toBeUndefined();
+    expect(api._handlers["message_sent"]).toBeUndefined();
+    expect(api.logger.error).toHaveBeenCalled();
+
+    const errorCalls = api.logger.error.mock.calls.map((c: any) => c[0]);
+    expect(errorCalls.some((m: string) => m.includes("config validation failed"))).toBe(true);
+    expect(errorCalls.some((m: string) => m.includes("plugin not started"))).toBe(true);
+  });
+
+  it("logs all validation errors individually", () => {
+    const dir = tmpDir();
+    const blocker = path.join(dir, "blocker");
+    fs.writeFileSync(blocker, "occupied");
+    const api = mockApi({
+      pluginConfig: {
+        cooldownMinutes: 0,
+        probeIntervalSec: 10,
+        autoFix: { whatsappMinRestartIntervalSec: 5 },
+        stateFile: path.join(blocker, "sub", "state.json"),
+      },
+    });
+
+    register(api);
+
+    const errorCalls = api.logger.error.mock.calls.map((c: any) => c[0]);
+    const validationErrors = errorCalls.filter((m: string) => m.includes("config validation failed"));
+    expect(validationErrors.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("registers services and handlers when config is valid", () => {
+    const dir = tmpDir();
+    const api = mockApi({
+      pluginConfig: {
+        modelOrder: ["anthropic/claude-opus-4-6"],
+        cooldownMinutes: 300,
+        probeIntervalSec: 300,
+        whatsappMinRestartIntervalSec: 300,
+        stateFile: path.join(dir, "state.json"),
+      },
+    });
+
+    register(api);
+
+    expect(api._services).toHaveLength(1);
+    expect(api._handlers["agent_end"]).toBeDefined();
+    expect(api._handlers["message_sent"]).toBeDefined();
   });
 });

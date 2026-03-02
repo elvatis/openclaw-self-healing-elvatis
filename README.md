@@ -68,6 +68,18 @@ openclaw gateway restart
 
 `autoFix.issueRepo` must use `owner/repo` format. Invalid values are ignored and the plugin falls back to `GITHUB_REPOSITORY` (if valid) or `elvatis/openclaw-self-healing-homeofe`.
 
+### Config validation
+
+The plugin validates configuration at startup and refuses to start if any value is invalid. All validation errors are logged via `api.logger.error` before the plugin exits.
+
+| Key | Valid range | Default |
+|-----|------------|---------|
+| `modelOrder` | At least one entry (non-empty array) | 3 default models |
+| `cooldownMinutes` | 1 - 10080 (1 minute to 1 week) | 300 |
+| `probeIntervalSec` | >= 60 | 300 |
+| `autoFix.whatsappMinRestartIntervalSec` | >= 60 | 300 |
+| `stateFile` | Parent directory must be writable | `~/.openclaw/workspace/memory/self-heal-state.json` |
+
 ## Notes
 
 Infrastructure changes remain ask-first.
