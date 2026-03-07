@@ -368,15 +368,18 @@ export function patchSessionModel(sessionsFile: string, sessionKey: string, mode
 
 async function runCmd(api: any, cmd: string, timeoutMs = 15000): Promise<{ ok: boolean; stdout: string; stderr: string; code?: number }> {
   try {
-    const res = await api.runtime.system.runCommandWithTimeout({
-      command: ["bash", "-lc", cmd],
-      timeoutMs,
-    });
+    // runCommandWithTimeout(argv: string[], options) — two separate args, not one object.
+    // SpawnResult uses `code`; accept `exitCode` too for mock compatibility.
+    const res = await api.runtime.system.runCommandWithTimeout(
+      ["bash", "-lc", cmd],
+      { timeoutMs },
+    );
+    const exitCode = res.code ?? (res as any).exitCode ?? null;
     return {
-      ok: res.exitCode === 0,
+      ok: exitCode === 0,
       stdout: String(res.stdout ?? ""),
       stderr: String(res.stderr ?? ""),
-      code: res.exitCode,
+      code: exitCode ?? undefined,
     };
   } catch (e: any) {
     return { ok: false, stdout: "", stderr: e?.message ?? String(e) };

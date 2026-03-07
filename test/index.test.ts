@@ -1087,7 +1087,7 @@ describe("register", () => {
       // not for a probe (since the model's cooldown already expired)
       const probeCalls = api.runtime.system.runCommandWithTimeout.mock.calls.filter(
         (c: any[]) => {
-          const cmd = c[0]?.command?.join(" ") ?? "";
+          const cmd = (Array.isArray(c[0]) ? c[0] : c[0]?.command)?.join(" ") ?? "";
           return cmd.includes("model probe");
         }
       );
@@ -1214,7 +1214,7 @@ describe("register", () => {
       // Should NOT have called the actual probe command
       const probeCalls = api.runtime.system.runCommandWithTimeout.mock.calls.filter(
         (c: any[]) => {
-          const cmd = c[0]?.command?.join(" ") ?? "";
+          const cmd = (Array.isArray(c[0]) ? c[0] : c[0]?.command)?.join(" ") ?? "";
           return cmd.includes("model probe");
         }
       );
@@ -1244,7 +1244,7 @@ describe("register", () => {
       // model-a probe succeeds, model-b probe fails
       let probeCount = 0;
       api.runtime.system.runCommandWithTimeout.mockImplementation(async (opts: any) => {
-        const cmd = opts?.command?.join(" ") ?? "";
+        const cmd = (Array.isArray(opts) ? opts : opts?.command)?.join(" ") ?? "";
         if (cmd.includes("model probe")) {
           probeCount++;
           if (cmd.includes("model-a")) {
@@ -1420,7 +1420,7 @@ describe("register", () => {
       // Should NOT have called gateway restart
       const restartCalls = api.runtime.system.runCommandWithTimeout.mock.calls.filter(
         (c: any[]) => {
-          const cmd = c[0]?.command?.join(" ") ?? "";
+          const cmd = (Array.isArray(c[0]) ? c[0] : c[0]?.command)?.join(" ") ?? "";
           return cmd.includes("gateway restart");
         }
       );
@@ -1472,7 +1472,7 @@ describe("register", () => {
       // Should NOT have called cron edit disable
       const cronCalls = api.runtime.system.runCommandWithTimeout.mock.calls.filter(
         (c: any[]) => {
-          const cmd = c[0]?.command?.join(" ") ?? "";
+          const cmd = (Array.isArray(c[0]) ? c[0] : c[0]?.command)?.join(" ") ?? "";
           return cmd.includes("cron edit");
         }
       );
@@ -1481,7 +1481,7 @@ describe("register", () => {
       // Should NOT have called gh issue create
       const issueCalls = api.runtime.system.runCommandWithTimeout.mock.calls.filter(
         (c: any[]) => {
-          const cmd = c[0]?.command?.join(" ") ?? "";
+          const cmd = (Array.isArray(c[0]) ? c[0] : c[0]?.command)?.join(" ") ?? "";
           return cmd.includes("gh issue create");
         }
       );
