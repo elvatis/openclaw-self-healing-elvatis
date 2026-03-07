@@ -94,14 +94,28 @@ The file is written atomically (write to `.tmp` then rename) to prevent partial 
   "health": "healthy | degraded | healing",
   "activeModel": "anthropic/claude-opus-4-6",
   "models": [
-    { "id": "...", "status": "available | cooldown", "cooldownRemainingSec": 1234 }
+    {
+      "id": "anthropic/claude-opus-4-6",
+      "status": "available | cooldown",
+      "cooldownReason": "rate limit (only when in cooldown)",
+      "cooldownRemainingSec": 1234,
+      "nextAvailableAt": 1700001234,
+      "lastProbeAt": 1700000900
+    }
   ],
-  "whatsapp": { "status": "connected | disconnected | unknown", "disconnectStreak": 0 },
+  "whatsapp": {
+    "status": "connected | disconnected | unknown",
+    "disconnectStreak": 0,
+    "lastRestartAt": null,
+    "lastSeenConnectedAt": 1700000000
+  },
   "cron": { "trackedJobs": 2, "failingJobs": [] },
   "config": { "dryRun": false, "probeEnabled": true, "cooldownMinutes": 300, "modelOrder": ["..."] },
   "generatedAt": 1700000000
 }
 ```
+
+Fields `cooldownReason`, `cooldownRemainingSec`, `nextAvailableAt`, and `lastProbeAt` on model entries are only present when the model is in cooldown.
 
 ## Notes
 
