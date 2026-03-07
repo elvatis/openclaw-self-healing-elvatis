@@ -651,12 +651,18 @@ export default function register(api: any) {
                   if (!v.ok) {
                     api.logger?.error?.(`[self-heal] NOT restarting gateway: openclaw.json invalid: ${v.error}`);
                   } else {
+                    // CRITICAL: persist lastRestartAt + reset streak BEFORE calling gateway restart.
+                    // openclaw gateway restart kills this process via systemd. Any state updates
+                    // placed AFTER runCmd will never execute, leaving lastRestartAt=0 and
+                    // bypassing the whatsappMinRestartIntervalSec rate-limit guard on the next boot.
+                    // This was the root cause of the infinite restart loop.
+                    state.whatsapp!.lastRestartAt = nowSec();
+                    state.whatsapp!.disconnectStreak = 0;
+                    saveState(config.stateFile, state);
                     backupConfig("pre-gateway-restart");
                     await runCmd(api, "openclaw gateway restart", 60000);
                     // If we are still alive after restart, attempt cleanup.
                     await cleanupPendingBackups("post-gateway-restart");
-                    state.whatsapp!.lastRestartAt = nowSec();
-                    state.whatsapp!.disconnectStreak = 0;
                   }
                 }
                 api.emit?.("self-heal:whatsapp-restart", {
